@@ -1,0 +1,28 @@
+# A pytorch implementation of Siamese network using Labeled-Faces-in-the-Wild dataset.
+	Linhao Jin (jin_linhao@hotmail.com)
+
+### Table of Contents
+- <a href='#updates'>Updates</a>
+- <a href='#installation'>Installation</a>
+- <a href='#datasets'>Datasets</a>
+- <a href='#training'>Training</a>
+- <a href='#references'>References</a>
+
+## Installation
+- Install [pytorch](http://pytorch.org/) following the website.
+- Clone this repository.
+	- Note: The current version is dependent on Python 2.7, not tested in Python3.
+
+## Datasets
+- Download Labeled Faces in the Wild dataset.
+	http://vis-www.cs.umass.edu/lfw/
+
+## Training 
+Go to the script folder and run:
+python siamese_lfw_pytorch.py
+
+## References
+- [Pytorch](https://github.com/pytorch/pytorch). 
+- [ref](https://github.com/harveyslash/Facial-Similarity-with-Siamese-Networks-in-Pytorch/tree/master
+- [ref](https://github.com/AlfredXiangWu/LightCNN#citation
+- [ref](https://github.com/delijati/pytorch-siamese
