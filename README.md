@@ -8,6 +8,10 @@
 - <a href='#training'>Training</a>
 - <a href='#references'>References</a>
 
+## Updates
+- Nov 11, 2017
+	- First version, training on cpu works
+
 ## Installation
 - Install [pytorch](http://pytorch.org/) following the website.
 - Clone this repository.
@@ -23,6 +27,6 @@ python siamese_lfw_pytorch.py
 
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
-- [ref](https://github.com/harveyslash/Facial-Similarity-with-Siamese-Networks-in-Pytorch/tree/master
-- [ref](https://github.com/AlfredXiangWu/LightCNN#citation
-- [ref](https://github.com/delijati/pytorch-siamese
+- https://github.com/harveyslash/Facial-Similarity-with-Siamese-Networks-in-Pytorch/tree/master
+- https://github.com/AlfredXiangWu/LightCNN#citation
+- https://github.com/delijati/pytorch-siamese
