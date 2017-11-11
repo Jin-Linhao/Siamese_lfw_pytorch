@@ -1,5 +1,5 @@
 # A pytorch implementation of Siamese network using Labeled-Faces-in-the-Wild dataset.
-	Linhao Jin (jin_linhao@hotmail.com)
+
 
 ### Table of Contents
 - <a href='#updates'>Updates</a>
@@ -18,7 +18,7 @@
 	- Note: The current version is dependent on Python 2.7, not tested in Python3.
 
 ## Datasets
-- Download Labeled Faces in the Wild dataset.
+- Download Labeled Faces in the Wild dataset under main folder.
 	- http://vis-www.cs.umass.edu/lfw/
 
 ## Training 
