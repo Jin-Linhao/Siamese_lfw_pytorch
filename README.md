@@ -23,7 +23,9 @@
 
 ## Training 
 - Go to the script folder and run:
+```
 	  python siamese_lfw_pytorch.py
+```
 
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
