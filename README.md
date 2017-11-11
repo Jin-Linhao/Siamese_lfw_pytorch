@@ -19,11 +19,11 @@
 
 ## Datasets
 - Download Labeled Faces in the Wild dataset.
-	http://vis-www.cs.umass.edu/lfw/
+	- http://vis-www.cs.umass.edu/lfw/
 
 ## Training 
-Go to the script folder and run:
-python siamese_lfw_pytorch.py
+- Go to the script folder and run:
+	  python siamese_lfw_pytorch.py
 
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
