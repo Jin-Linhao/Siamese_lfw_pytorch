@@ -136,7 +136,7 @@ def train():
 						num_workers=args.workers,
 						batch_size=args.batch_size)
 
-	net = SiameseNetwork()
+	net = SiameseNetwork().cuda()
 	criterion = ContrastiveLoss()
 	optimizer = optim.Adam(net.parameters(),lr = args.learning_rate )
 	counter = []
@@ -145,7 +145,7 @@ def train():
 
 	for i, data in enumerate(train_dataloader,0):
 		img0, img1 , label = data
-		img0, img1 , label = Variable(img0, volatile = true), Variable(img1, volatile = true) , Variable(label, volatile = true)
+		img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
 		output1,output2 = net(img0,img1)
 		optimizer.zero_grad()
 		loss_contrastive = criterion(output1,output2,label)
