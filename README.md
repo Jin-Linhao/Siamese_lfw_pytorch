@@ -36,7 +36,7 @@ or
 ```
 or
 ```
-	  python siamese_lfw_bce.py
+	  python siamese_lfw_bce.py --cuda on
 ```
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 

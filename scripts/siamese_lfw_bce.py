@@ -30,7 +30,7 @@ parser.add_argument('--epochs', default=1, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=4, type=int,
 					metavar='N', help='batch size (default: 8)')
 parser.add_argument('--learning_rate', default=0.01, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
@@ -146,7 +146,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
-			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
 		loss = criterion(output, label)
@@ -163,7 +163,7 @@ def validate(test_dataloader, forward_pass, criterion):
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
-			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		euclidean_distance = F.pairwise_distance(img0, img1)
 		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
 
