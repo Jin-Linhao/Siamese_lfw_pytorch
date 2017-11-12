@@ -28,7 +28,7 @@
 ```
 - For cuda version, run:
 ```
-	  python siamese_lfw_pytorch_cuda.py
+	  python siamese_lfw_pytorch.py --cuda on
 ```
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
