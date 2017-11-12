@@ -20,7 +20,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import os
 
-from siamese_net_19 import SiameseNetwork
+from siamese_19_BCE import SiameseNetwork_BCE
 
 
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
@@ -119,15 +119,48 @@ class ContrastiveLoss(torch.nn.Module):
 
 	def forward(self, output1, output2, label):
 		euclidean_distance = F.pairwise_distance(output1, output2)
-		print euclidean_distance, "label: ", label
+#         print euclidean_distance, "label: ", label
 		loss_contrastive = torch.mean((label) * torch.pow(euclidean_distance, 2) +
 									  (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 		return loss_contrastive
 
+# def train(trainloader):
+#     model = Net()
+#     criterion = nn.BCELoss()
+#     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+#     optimizer = optim.Adam(model.parameters(), lr=0.001)
+#     print(time.clock())
+#     print('Start Training')
+#     for epoch in range(18):  # loop over the dataset multiple times
+#         running_loss = 0.0
+#         for i, data in enumerate(trainloader, 0):
+#             labels = data['labels']
+#             img1 = data['image1']
+#             img2 = data['image2']
+#             # wrap them in Variable
+#             # inputs1, inputs2, labels = Variable(img1.cuda()), Variable(img2.cuda()), Variable(labels.cuda())
+#             inputs1, inputs2, labels = Variable(img1), Variable(img2), Variable(labels)
+#             # zero the parameter gradients
+#             optimizer.zero_grad()
+#             # forward + backward + optimize
+#             outputs = model(inputs1, inputs2)
+#             loss = criterion(outputs, labels)
+#             loss.backward()
+#             optimizer.step()
+#             # print statistics
+#             running_loss += loss.data[0]
+#             if i % 100 == 99:    # print every 20 mini-batches
+#                 print('[%d, %5d] loss: %.3f' %
+#                       (epoch + 1, i + 1, running_loss / 100))
+#                 running_loss = 0.0
+
+#     print('Finished Training')
+#     print(time.clock())
+#     torch.save(model.state_dict(), './model/p1a.pkl')
 
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-	lr = 0.01 * (0.1 ** (epoch // 30))
+	lr = 0.01 * (0.1 ** (epoch))
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
 
@@ -147,15 +180,15 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
-		output1, output2 = forward_pass(img0,img1)
+		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
-		loss_contrastive = criterion(output1,output2,label)
-		loss_contrastive.backward()
+		loss = criterion(output, label)
+		loss.backward()	
 		optimizer.step()
-		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss_contrastive.data[0]))
+		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss.data[0]))
 		iteration_number +=1
 		plot_counter.append(iteration_number)
-		loss_history.append(loss_contrastive.data[0])
+		loss_history.append(loss.data[0])
 
 
 def validate(test_dataloader, forward_pass, criterion):
@@ -191,11 +224,11 @@ def main():
 						batch_size=args.batch_size)
 
 	if args.cuda == "off":
-		forward_pass = SiameseNetwork()
+		forward_pass = SiameseNetwork_BCE()
 	else:
-		forward_pass = SiameseNetwork().cuda()
+		forward_pass = SiameseNetwork_BCE().cuda()
 	# forward_pass = SiameseNetwork()
-	criterion = ContrastiveLoss()
+	criterion = nn.BCELoss()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
 
 	for epoch in range(args.start_epoch, args.epochs):
