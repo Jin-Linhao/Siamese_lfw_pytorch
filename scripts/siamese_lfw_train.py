@@ -24,15 +24,15 @@ from siamese_net_19 import SiameseNetwork
 
 
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
-parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
-					help='number of data loading workers (default: 4)')
+parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+					help='number of data loading workers (default: 8)')
 # parser.add_argument('--epochs', default=80, type=int, metavar='N',
 #                     help='number of total epochs to run')
 # parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 #                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=1, type=int,
-					metavar='N', help='batch size (default: 1)')
-parser.add_argument('--lr', '--learning_rate', default=0.01, type=float,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
+					metavar='N', help='batch size (default: 8)')
+parser.add_argument('--learning_rate', default=0.01, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 					help='momentum')
@@ -44,9 +44,10 @@ parser.add_argument('--train_list', default='../data/train.txt', type=str, metav
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
-parser.add_argument('--save_path', default='', type=str, metavar='PATH',
-					help='path to save checkpoint (default: none)')
-
+parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
+					help='path to save checkpoint (default: ../data/)')
+parser.add_argument('--cuda', default="off", type=str, 
+					help='switch on/off cuda option (default: off)')
 
 def imshow(img,text,should_save=False):
 	npimg = img.numpy()
@@ -93,8 +94,8 @@ class ImageList(data.Dataset):
 	def __getitem__(self, index):
 		final = []
 		[imgPath1, imgPath2, target] = self.imgList[index]
-		img1 = self.loader(os.path.join(train_dir, imgPath1))
-		img2 = self.loader(os.path.join(train_dir, imgPath2))
+		img1 = self.loader(os.path.join(args.lfw_path, imgPath1))
+		img2 = self.loader(os.path.join(args.lfw_path, imgPath2))
 		if self.transform is not None:
 			img1 = self.transform(img1)
 			img2 = self.transform(img2)
@@ -112,7 +113,7 @@ class ContrastiveLoss(torch.nn.Module):
 	Contrastive loss function.
 	Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
 	"""
-	def __init__(self, margin=3.0):
+	def __init__(self, margin=1.0):
 		super(ContrastiveLoss, self).__init__()
 		self.margin = margin
 
@@ -135,27 +136,54 @@ def train():
 						shuffle=False,
 						num_workers=args.workers,
 						batch_size=args.batch_size)
-
-	net = SiameseNetwork()
+	if args.cuda == "off":
+		forward_pass = SiameseNetwork()
+	else:
+		forward_pass = SiameseNetwork().cuda()
+	# forward_pass = SiameseNetwork()
 	criterion = ContrastiveLoss()
-	optimizer = optim.Adam(net.parameters(),lr = args.learning_rate )
+	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
 	plot_counter = []
 	loss_history = [] 
 	iteration_number= 0
 
 	for i, data in enumerate(train_dataloader,0):
+		adjust_learning_rate(optimizer, i)
 		img0, img1 , label = data
-		img0, img1 , label = Variable(img0, volatile = true), Variable(img1, volatile = true) , Variable(label, volatile = true)
-		output1,output2 = net(img0,img1)
+		if args.cuda == "off":
+			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
+		else:
+			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
+		output1, output2 = forward_pass(img0,img1)
 		optimizer.zero_grad()
 		loss_contrastive = criterion(output1,output2,label)
 		loss_contrastive.backward()
 		optimizer.step()
-		print("Iteration: {}\n Current loss {}\n".format(i,loss_contrastive.data[0]))
+		print("Iteration: {}/{}\n Current loss {}\n".format(i,len(train_dataloader), loss_contrastive.data[0]))
 		iteration_number +=1
-		counter.append(iteration_number)
+		plot_counter.append(iteration_number)
 		loss_history.append(loss_contrastive.data[0])
+
+	save_name = args.save_path + '_checkpoint.pth.tar'
+	save_checkpoint({
+		'i': i + 1,
+#         'arch': args.arch,
+#         'state_dict': model.state_dict(),
+#         'prec1': prec1,
+		}, save_name)
+
 	show_plot(plot_counter,loss_history)
+
+
+def adjust_learning_rate(optimizer, epoch):
+	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+	lr = 0.01 * (0.1 ** (epoch // 30))
+	for param_group in optimizer.param_groups:
+		param_group['lr'] = lr
+
+
+def save_checkpoint(state, filename):
+	torch.save(state, filename)
 
 
 if __name__ == '__main__':
