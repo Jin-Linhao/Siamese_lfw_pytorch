@@ -124,39 +124,6 @@ class ContrastiveLoss(torch.nn.Module):
 									  (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 		return loss_contrastive
 
-# def train(trainloader):
-#     model = Net()
-#     criterion = nn.BCELoss()
-#     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-#     optimizer = optim.Adam(model.parameters(), lr=0.001)
-#     print(time.clock())
-#     print('Start Training')
-#     for epoch in range(18):  # loop over the dataset multiple times
-#         running_loss = 0.0
-#         for i, data in enumerate(trainloader, 0):
-#             labels = data['labels']
-#             img1 = data['image1']
-#             img2 = data['image2']
-#             # wrap them in Variable
-#             # inputs1, inputs2, labels = Variable(img1.cuda()), Variable(img2.cuda()), Variable(labels.cuda())
-#             inputs1, inputs2, labels = Variable(img1), Variable(img2), Variable(labels)
-#             # zero the parameter gradients
-#             optimizer.zero_grad()
-#             # forward + backward + optimize
-#             outputs = model(inputs1, inputs2)
-#             loss = criterion(outputs, labels)
-#             loss.backward()
-#             optimizer.step()
-#             # print statistics
-#             running_loss += loss.data[0]
-#             if i % 100 == 99:    # print every 20 mini-batches
-#                 print('[%d, %5d] loss: %.3f' %
-#                       (epoch + 1, i + 1, running_loss / 100))
-#                 running_loss = 0.0
-
-#     print('Finished Training')
-#     print(time.clock())
-#     torch.save(model.state_dict(), './model/p1a.pkl')
 
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""

@@ -24,11 +24,19 @@
 ## Training 
 - Go to the script folder and run:
 ```
-	  python siamese_lfw_pytorch.py
+	  python siamese_lfw_train.py
+```
+or
+```
+	  python siamese_lfw_bce.py
 ```
 - For cuda version, run:
 ```
-	  python siamese_lfw_pytorch.py --cuda on
+	  python siamese_lfw_train.py --cuda on
+```
+or
+```
+	  python siamese_lfw_bce.py
 ```
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
