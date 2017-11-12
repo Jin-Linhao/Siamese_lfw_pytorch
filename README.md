@@ -26,7 +26,10 @@
 ```
 	  python siamese_lfw_pytorch.py
 ```
-
+- For cuda version, run:
+```
+	  python siamese_lfw_pytorch_cuda.py
+```
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
 - https://github.com/harveyslash/Facial-Similarity-with-Siamese-Networks-in-Pytorch/tree/master

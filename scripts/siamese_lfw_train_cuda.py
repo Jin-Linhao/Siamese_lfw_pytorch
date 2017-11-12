@@ -139,7 +139,7 @@ def train():
 	net = SiameseNetwork().cuda()
 	criterion = ContrastiveLoss()
 	optimizer = optim.Adam(net.parameters(),lr = args.learning_rate )
-	counter = []
+	plot_counter = []
 	loss_history = [] 
 	iteration_number= 0
 
@@ -152,8 +152,8 @@ def train():
 		loss_contrastive.backward()
 		optimizer.step()
 		print("Iteration: {}\n Current loss {}\n".format(i,loss_contrastive.data[0]))
-		iteration_number +=10
-		counter.append(iteration_number)
+		iteration_number +=1
+		plot_counter.append(iteration_number)
 		loss_history.append(loss_contrastive.data[0])
 	show_plot(counter,loss_history)
 
