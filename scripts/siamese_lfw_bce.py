@@ -127,7 +127,7 @@ class ContrastiveLoss(torch.nn.Module):
 
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-	lr = 0.01 * (0.1 ** (epoch))
+	lr = 0.01 * (0.1 ** (epoch//1))
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
 
