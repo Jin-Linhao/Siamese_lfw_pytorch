@@ -26,7 +26,7 @@ from siamese_net_19 import SiameseNetwork
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1, type=int, metavar='N',
+parser.add_argument('--epochs', default=3, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -113,13 +113,13 @@ class ContrastiveLoss(torch.nn.Module):
 	Contrastive loss function.
 	Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
 	"""
-	def __init__(self, margin=1.0):
+	def __init__(self, margin=24.0):
 		super(ContrastiveLoss, self).__init__()
 		self.margin = margin
 
 	def forward(self, output1, output2, label):
 		euclidean_distance = F.pairwise_distance(output1, output2)
-		print euclidean_distance, "label: ", label
+#        print euclidean_distance, "label: ", label
 		loss_contrastive = torch.mean((label) * torch.pow(euclidean_distance, 2) +
 									  (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 		return loss_contrastive
@@ -146,7 +146,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
-			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output1, output2 = forward_pass(img0,img1)
 		optimizer.zero_grad()
 		loss_contrastive = criterion(output1,output2,label)
@@ -160,11 +160,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 
 def validate(test_dataloader, forward_pass, criterion):
 	for i, data in enumerate(test_dataloader,0):
+		img0, img1 , label = data
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
-			img0, img1 , label = Variable(img0, volatile = true).cuda(), Variable(img1, volatile = true).cuda() , Variable(label, volatile = true).cuda()
-		euclidean_distance = F.pairwise_distance(img0, img1)
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
+		output1, output2 = forward_pass(img0, img1)
+		euclidean_distance = F.pairwise_distance(output1,output2)
+		concatenated = torch.cat((img0, img1),0)
 		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
 
 
@@ -188,7 +191,7 @@ def main():
 								transforms.ToTensor(),            ])),
 						shuffle=False,
 						num_workers=args.workers,
-						batch_size=args.batch_size)
+						batch_size=1)
 
 	if args.cuda == "off":
 		forward_pass = SiameseNetwork()

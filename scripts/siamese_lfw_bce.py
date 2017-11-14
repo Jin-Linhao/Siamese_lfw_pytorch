@@ -26,11 +26,11 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1, type=int, metavar='N',
+parser.add_argument('--epochs', default=5, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=4, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
 					metavar='N', help='batch size (default: 8)')
 parser.add_argument('--learning_rate', default=0.01, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
@@ -108,23 +108,6 @@ class ImageList(data.Dataset):
 		return len(self.imgList)
 
 
-class ContrastiveLoss(torch.nn.Module):
-	"""
-	Contrastive loss function.
-	Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
-	"""
-	def __init__(self, margin=1.0):
-		super(ContrastiveLoss, self).__init__()
-		self.margin = margin
-
-	def forward(self, output1, output2, label):
-		euclidean_distance = F.pairwise_distance(output1, output2)
-#         print euclidean_distance, "label: ", label
-		loss_contrastive = torch.mean((label) * torch.pow(euclidean_distance, 2) +
-									  (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
-		return loss_contrastive
-
-
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
 	lr = 0.01 * (0.1 ** (epoch//1))
@@ -160,12 +143,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 
 def validate(test_dataloader, forward_pass, criterion):
 	for i, data in enumerate(test_dataloader,0):
+		img0, img1 , label = data	
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
-		euclidean_distance = F.pairwise_distance(img0, img1)
-		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
+		output= forward_pass(img0,img1)
+		concatenated = torch.cat((img0, img1),0)
+		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
 
 
 
@@ -204,12 +189,12 @@ def main():
 
 		# train for one epoch
 		train(train_dataloader, forward_pass, criterion, optimizer, epoch)
-		validate(test_dataloader, forward_pass, criterion)
+		# validate(test_dataloader, forward_pass, criterion)
 		# evaluate on validation set
 		# prec1 = validate(val_loader, model, criterion)
 		save_name = args.save_path + str(epoch) + '_checkpoint.pth.tar'
 		save_checkpoint({
-			'i': i + 1,
+			'epoch': epoch + 1,
 	#         'arch': args.arch,
 	#         'state_dict': model.state_dict(),
 			# 'prec1': prec1,
