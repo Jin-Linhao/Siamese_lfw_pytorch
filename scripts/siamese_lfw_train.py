@@ -147,7 +147,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
-		output1, output2 = forward_pass(img0,img1)
+
 		optimizer.zero_grad()
 		loss_contrastive = criterion(output1,output2,label)
 		loss_contrastive.backward()
@@ -161,13 +161,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 def validate(test_dataloader, forward_pass, criterion):
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
+		concatenated = torch.cat((img0, img1),0)
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output1, output2 = forward_pass(img0, img1)
 		euclidean_distance = F.pairwise_distance(output1,output2)
-		concatenated = torch.cat((img0, img1),0)
+		
 		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
 
 

@@ -143,13 +143,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 
 def validate(test_dataloader, forward_pass, criterion):
 	for i, data in enumerate(test_dataloader,0):
-		img0, img1 , label = data	
+		img0, img1 , label = data
+		concatenated = torch.cat((img0, img1),0)	
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
-		concatenated = torch.cat((img0, img1),0)
+
 		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
 
 
