@@ -32,7 +32,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=8, type=int,
 					metavar='N', help='batch size (default: 8)')
-parser.add_argument('--learning_rate', default=0.01, type=float,
+parser.add_argument('--learning_rate', default=0.00001, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 					help='momentum')
@@ -163,7 +163,7 @@ def main():
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
-						shuffle=False,
+						shuffle=True,
 						num_workers=args.workers,
 						batch_size=args.batch_size)
 
@@ -172,7 +172,7 @@ def main():
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
-						shuffle=False,
+						shuffle=True,
 						num_workers=args.workers,
 						batch_size=args.batch_size)
 
