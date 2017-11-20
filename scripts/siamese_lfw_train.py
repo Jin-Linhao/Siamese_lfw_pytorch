@@ -115,7 +115,9 @@ class ContrastiveLoss(torch.nn.Module):
 	"""
 	def __init__(self, margin=24.0):
 		super(ContrastiveLoss, self).__init__()
+		margin = args.batch_size*3
 		self.margin = margin
+
 
 	def forward(self, output1, output2, label):
 		euclidean_distance = F.pairwise_distance(output1, output2)
@@ -127,7 +129,7 @@ class ContrastiveLoss(torch.nn.Module):
 
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-	lr = 0.01 * (0.1 ** (epoch // 1))
+	lr = 0.01 * (0.1 ** (epoch // 3))
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
 
