@@ -65,7 +65,7 @@ def show_plot(iteration,loss):
 	
 
 def default_loader(path):
-	img = Image.open(path)
+	img = Image.open(path).convert('L')
 	return img
 
 

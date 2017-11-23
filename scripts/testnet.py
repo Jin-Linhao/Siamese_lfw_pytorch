@@ -6,7 +6,7 @@ class testNet(nn.Module):
     def __init__(self):
         super(testNet, self).__init__()
         self.cnn = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=5, padding=2),
+            nn.Conv2d(1, 64, kernel_size=5, padding=2),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(2, stride=2),
@@ -19,16 +19,16 @@ class testNet(nn.Module):
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(256),
-            # nn.MaxPool2d(2, stride=2),
+            nn.MaxPool2d(2, stride=2),
 
-            # nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            # nn.ReLU(inplace=True),
-            # nn.BatchNorm2d(512)
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm2d(512)
             )
             
 
         self.fc = nn.Sequential(
-            nn.Linear(262144, 1024),
+            nn.Linear(131072, 1024),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(1024))
 
