@@ -68,8 +68,9 @@ def matching():
 
 
 def ransac(matches):
-	for times in range(0,3):
-		lst = random.sample(matches,15)
+	max_count = 0
+	for times in range(0,300):
+		lst = random.sample(matches,5)
 		# print lst
 		x = lst[0][0][0]
 		y = lst[0][0][1]
@@ -77,130 +78,114 @@ def ransac(matches):
 		y_p = lst[0][1][1]
 		# print y
 		r = np.mat([[int(x), y, 1, 0, 0, 0, -x_p * x, -x_p * y, -x_p],
-					[0, 0, 0, x, y, 1, -y_p * x, -y_p * y, -y_p]], dtype=int)
+					[0, 0, 0, x, y, 1, -y_p * x, -y_p * y, -y_p]], dtype = int)
 		A = r
-		print A
-
-
-
-# max_count = 0
-# for times in range(0,300):
-#     lst = random.sample(matches,15)
-
-#     x = location1[lst[0][0],0]
-#     y = location1[lst[0][0],1]
-#     x_p = location2[lst[0][1],0]
-#     y_p = location2[lst[0][1],1]
-#     r = np.mat([[x, y, 1, 0, 0, 0, -x_p * x, -x_p * y, -x_p],
-#                 [0, 0, 0, x, y, 1, -y_p * x, -y_p * y, -y_p]])
-#     A = r
-
-#     for i in range(1,15):
-#         x = location1[lst[i][0],0]
-#         y = location1[lst[i][0],1]
-#         x_p = location2[lst[i][1],0]
-#         y_p = location2[lst[i][1],1]
-#         r = np.mat([[x, y, 1, 0, 0, 0, -x_p * x, -x_p * y, -x_p],
-#                     [0, 0, 0, x, y, 1, -y_p * x, -y_p * y, -y_p]])
-#         A = np.vstack((A, r))
+		for i in range(1,5):
+			x = lst[i][0][0]
+			y = lst[i][0][1]
+			x_p = lst[i][1][0]
+			y_p = lst[i][1][1]
+			r = np.mat([[x, y, 1, 0, 0, 0, -x_p * x, -x_p * y, -x_p],
+						[0, 0, 0, x, y, 1, -y_p * x, -y_p * y, -y_p]], dtype = int)
+			A = np.vstack((A, r))
+		# print "====================="	
+		# print A
+		# print "====================="
 	
-#     v,w = np.linalg.eig(np.transpose(A) * A)
-#     v = abs(np.real(v))
-#     w = np.real(w)
-#     t_ransac = np.reshape(w[:,np.argmin(v)],(3,3))
+		v,w = np.linalg.eig(np.transpose(A) * A)
+		v = abs(np.real(v))
+		w = np.real(w)
+		t_ransac = np.reshape(w[:,np.argmin(v)],(3,3))
+		# print t_ransac
 
+		count = 0
+		for j in matches:
 
+			k = t_ransac * np.mat([[j[0][0]],[j[0][1]],[1]])
+			
+			d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[j[1][0]],[j[1][1]],[1]])
+			# print np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]), np.mat([[j[1][0]],[j[1][1]],[1]])
+			# print sum(np.multiply(d,d))
+			if sum(np.multiply(d,d)) < 100:
+				count += 1
+		t = []
+		if count > max_count:
+			max_count = count
+			t = t_ransac
+		print t, "===="
+		return t
 
-#     count = 0
-#     for j in matches:
-#         k = t_ransac * np.mat([[location1[j[0],0]],[location1[j[0],1]],[1]])
+def plot(matches, t):
+	match_temp = []
+	for m in matches:
+	    k = t * np.mat([[m[0][0]],[m[0][1]],[1]])
+	    d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[m[0][0]],[m[0][1]],[1]])
+	    print sum(np.multiply(d,d))
+	    if sum(np.multiply(d,d)) < 100:
+	        match_temp.append(m)
 
-#         d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[location2[j[1],0]],[location2[j[1],1]],[1]])
-#         if sum(np.multiply(d,d)) < 100:
-#             count += 1
-#     if count > max_count:
-#         max_count = count
-#         t = t_ransac
+	A = np.mat(np.zeros((1,9)))
+	print match_temp
 
-# match_temp = []
-# for m in matches:
-#     k = t * np.mat([[location1[m[0],0]],[location1[m[0],1]],[1]])
-#     d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[location2[m[1],0]],[location2[m[1],1]],[1]])
+	# for i in match_temp:
+	#     x = i[0][0][0]
+	#     y = i[0][0][1]
+	#     x_p = i[0][1][0]
+	#     y_p = i[0][1][1]
+		
+	#     r = np.mat([[x * x_p, x * y_p, x, y * x_p, y * y_p, y, x_p, y_p, 1]])
+	#     A = np.vstack((A,r))
 
-#     if sum(np.multiply(d,d)) < 20:
-#         match_temp.append(m)
+	# A = A[1:A.shape[0],:]
+	# v,w = np.linalg.eig(np.transpose(A) * A)
+	# v = abs(np.real(v))
+	# w = np.real(w)
+	# f = np.reshape(w[:,np.argmin(v)],(3,3))
 
-
-# for line in match_temp:
-
-#     pt1 = (location1[line[0],1], location1[line[0],0])
-#     pt2 = (location2[line[1],1] + im1.shape[1], location2[line[1],0])
-#     cv2.line(I,pt1,pt2,(255,255,0),2)
-	
-# plt.figure()
-# plt.imshow(I)
-# plt.show()
-
-# A = np.mat(np.zeros((1,9)))
-
-# for i in match_temp:
-#     x = location1[i[0],0]
-#     y = location1[i[0],1]
-#     x_p = location2[i[1],0]
-#     y_p = location2[i[1],1]
-	
-#     r = np.mat([[x * x_p, x * y_p, x, y * x_p, y * y_p, y, x_p, y_p, 1]])
-#     A = np.vstack((A,r))
-
-# A = A[1:A.shape[0],:]
-# v,w = np.linalg.eig(np.transpose(A) * A)
-# v = abs(np.real(v))
-# w = np.real(w)
-# f = np.reshape(w[:,np.argmin(v)],(3,3))
-
-# lst = random.sample(match_temp,8)
-# I = np.concatenate((I1,I2),axis=1)
-# for i in lst:
-#     ul = location1[i[0],0]
-#     vl = location1[i[0],1]
-#     k = np.mat([[ul,vl,1]]) * f
-#     a = k[0,0]
-#     b = k[0,1]
-#     c = k[0,2]
-#     color = (random.randrange(250),random.randrange(250),random.randrange(250))
-#     cv2.circle(I,(vl,ul),10,color,2)
-	
-#     x1 = -c / a
-#     y1 = 0
-#     x2 = 0
-#     y2 = -c / b
-#     if x1 < 0:
-#         if (-c - b * im1.shape[1]) / a < im1.shape[0]:
-#             x1 = (-c - b * im1.shape[1]) / a
-#             y1 = im1.shape[1]
-#         else:
-#             x1  = im1.shape[0]
-#             y1  = (-c - a * x1) / b
-#     if x1 > im1.shape[0]:
-#         x1  = im1.shape[0]
-#         y1  = (-c - a * x1) / b
-#         if (-c - b * im1.shape[1]) / a > 0:
-#             x2 = (-c - b * im1.shape[1]) / a
-#             y2 = im1.shape[1]
-#     if y2 < 0:
-#         x2 = im1.shape[0]
-#         y2 = (-c - a * x2) / b
-#     if y2 > im1.shape[1]:
-#         x2 = (-c - b * im1.shape[1]) / a
-#         y2 = im1.shape[1]
-	
-#     cv2.line(I,(int(y1 + im1.shape[1]),int(x1)),(int(y2 + im1.shape[1]),int(x2)),color,2)
-# plt.figure()
-# plt.imshow(I)
-# plt.show()
-	
+	# lst = random.sample(match_temp,8)
+	# I = np.concatenate((I1,I2),axis=1)
+	# for i in lst:
+	#     ul = location1[i[0],0]
+	#     vl = location1[i[0],1]
+	#     k = np.mat([[ul,vl,1]]) * f
+	#     a = k[0,0]
+	#     b = k[0,1]
+	#     c = k[0,2]
+	#     color = (random.randrange(250),random.randrange(250),random.randrange(250))
+	#     cv2.circle(I,(vl,ul),10,color,2)
+		
+	#     x1 = -c / a
+	#     y1 = 0
+	#     x2 = 0
+	#     y2 = -c / b
+	#     if x1 < 0:
+	#         if (-c - b * im1.shape[1]) / a < im1.shape[0]:
+	#             x1 = (-c - b * im1.shape[1]) / a
+	#             y1 = im1.shape[1]
+	#         else:
+	#             x1  = im1.shape[0]
+	#             y1  = (-c - a * x1) / b
+	#     if x1 > im1.shape[0]:
+	#         x1  = im1.shape[0]
+	#         y1  = (-c - a * x1) / b
+	#         if (-c - b * im1.shape[1]) / a > 0:
+	#             x2 = (-c - b * im1.shape[1]) / a
+	#             y2 = im1.shape[1]
+	#     if y2 < 0:
+	#         x2 = im1.shape[0]
+	#         y2 = (-c - a * x2) / b
+	#     if y2 > im1.shape[1]:
+	#         x2 = (-c - b * im1.shape[1]) / a
+	#         y2 = im1.shape[1]
+		
+	#     cv2.line(I,(int(y1 + im1.shape[1]),int(x1)),(int(y2 + im1.shape[1]),int(x2)),color,2)
+	# plt.figure()
+	# plt.imshow(I)
+	# plt.show()
+		
 
 # time.sleep(1000)
 if __name__ == "__main__":
 	matches = matching()
-	ransac(matches)
+	t = ransac(matches)
+	plot(matches, t)
