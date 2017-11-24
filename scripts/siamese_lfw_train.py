@@ -215,7 +215,7 @@ def main():
 		# prec1 = validate(val_loader, model, criterion)
 		save_name = args.save_path + str(epoch) + '_checkpoint.pth.tar'
 		save_checkpoint({
-			'i': i + 1,
+			'epoch': epoch + 1,
 	#         'arch': args.arch,
 	#         'state_dict': model.state_dict(),
 			# 'prec1': prec1,

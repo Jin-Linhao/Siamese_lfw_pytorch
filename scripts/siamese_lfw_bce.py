@@ -26,11 +26,11 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=2, type=int, metavar='N',
+parser.add_argument('--epochs', default=1, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
 					metavar='N', help='batch size (default: 8)')
 parser.add_argument('--learning_rate', default=1e-6, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
@@ -40,7 +40,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
@@ -132,6 +132,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
+		forward_pass.zero_grad()
 		# loss = criterion(output, label)
 		loss = F.binary_cross_entropy(output, label)
 		loss.backward()	
@@ -140,24 +141,29 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		iteration_number +=1
 		plot_counter.append(iteration_number)
 		loss_history.append(loss.data[0])
+	return plot_counter, loss_history
 
 
 def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
+	total = 0
+	forward_pass = SiameseNetwork_BCE().cuda()
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)	
 		if args.cuda == "off":
-			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda(), Variable(label).cuda()
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
-		if output == label:
-			cnt = cnt +1
-		print "total right count = ", cnt
-		print "accuracy is: ", cnt / len(test_dataloader)
+		predicted = output.data > 0.5
+		predicted = predicted.type('torch.LongTensor')
+		label_data = label.data
+		label_data = label.data.type('torch.LongTensor')
+		cnt += torch.sum(predicted == label_data)
+		total += label.size(0)
 		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
-
+	return cnt, total
 
 
 def main():
@@ -179,7 +185,7 @@ def main():
 								transforms.ToTensor(),            ])),
 						shuffle=True,
 						num_workers=args.workers,
-						batch_size=args.batch_size)
+						batch_size=1)
 
 	if args.cuda == "off":
 		forward_pass = SiameseNetwork_BCE()
@@ -189,14 +195,17 @@ def main():
 	criterion = nn.BCELoss()
 	# criterion = F.binary_cross_entropy()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
-
+	plot_counter = []
+	loss_history = [] 
 	for epoch in range(args.start_epoch, args.epochs):
 
 		adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		train(train_dataloader, forward_pass, criterion, optimizer, epoch)
-		# validate(test_dataloader, forward_pass, criterion)
+		plot_counter, loss_history = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		correct, total = validate(test_dataloader, forward_pass, criterion)
+		print correct, total
+		print "total accuracy = ", float(correct)/total
 		# evaluate on validation set
 		# prec1 = validate(val_loader, model, criterion)
 		save_name = args.save_path + str(epoch) + '_checkpoint.pth.tar'
@@ -206,6 +215,39 @@ def main():
 	#         'state_dict': model.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
+
+	training_plot = "p1a_trainloss.txt"
+	with open(training_plot, 'w') as f:
+		for i in range(0, len(plot_counter)):
+			f.write(" ".join([str(plot_counter), str(loss_history)]))
+			f.write('\n')
+	print "done"		
+
+
+def transform(self, img):
+	if random.random()>0.7:
+		h, w, c = np.shape(img)
+		if random.random() > 0.5:
+			s = (ransom.random() - 0.5)/1.7+1
+			img = scipy.misc.imresize(img, (int(h*s), int(w*s)))
+		if random.random() > 0.5:
+			img = ndimage.shift(img, (int(random.random()*20 - 10), int(random.random()*20 - 10)))
+		if random.random() > 0.5:
+			img = scipy.ndimage.rotate(img, random.random()*60 -30)
+		if random.random() > 0.5:
+			img = np.flip(img,1)
+		h_c, w_c = img.shape[:2]
+		if h_c > h:
+			top = int(h_c/2 - h/2)
+			left = int(w_c/2 - w/2)
+			img_out = img[top: top + h, left:left+w]
+		else:
+			pad_size = int((h-h_c)/2)
+			pads = ((pad_size, pad_size), (pad_size, pad_size), (0,0))
+			img_out = np.pad(np.array(img), pads, 'costant', costant_values=0)
+	else:
+		img_out = img
+	return img_out
 
 
 if __name__ == '__main__':

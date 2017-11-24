@@ -48,5 +48,5 @@ class SiameseNetwork_BCE(nn.Module):
         output_c = torch.cat((output1, output2), 1)
         output = self.linear(output_c)
         output = torch.sigmoid(output)
-        
+        # print "sigmoid"
         return output
