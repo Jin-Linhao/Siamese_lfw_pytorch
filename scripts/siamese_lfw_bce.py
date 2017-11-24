@@ -24,15 +24,15 @@ from siamese_19_BCE import SiameseNetwork_BCE
 
 
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=5, type=int, metavar='N',
+parser.add_argument('--epochs', default=2, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=8, type=int,
 					metavar='N', help='batch size (default: 8)')
-parser.add_argument('--learning_rate', default=0.00001, type=float,
+parser.add_argument('--learning_rate', default=1e-6, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 					help='momentum')
@@ -132,7 +132,8 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
-		loss = criterion(output, label)
+		# loss = criterion(output, label)
+		loss = F.binary_cross_entropy(output, label)
 		loss.backward()	
 		optimizer.step()
 		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss.data[0]))
@@ -142,6 +143,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 
 
 def validate(test_dataloader, forward_pass, criterion):
+	cnt = 0
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)	
@@ -150,8 +152,11 @@ def validate(test_dataloader, forward_pass, criterion):
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
-
-		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
+		if output == label:
+			cnt = cnt +1
+		print "total right count = ", cnt
+		print "accuracy is: ", cnt / len(test_dataloader)
+		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
 
 
 
@@ -182,6 +187,7 @@ def main():
 		forward_pass = SiameseNetwork_BCE().cuda()
 	# forward_pass = SiameseNetwork()
 	criterion = nn.BCELoss()
+	# criterion = F.binary_cross_entropy()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
 
 	for epoch in range(args.start_epoch, args.epochs):
