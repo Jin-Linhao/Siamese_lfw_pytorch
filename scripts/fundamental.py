@@ -117,7 +117,7 @@ def ransac(matches):
 		if count > max_count:
 			max_count = count
 			t = t_ransac
-	print t
+	# print t
 	return t
 
 
@@ -127,9 +127,9 @@ def plot(matches, t, im1, im2):
 	for m in matches:
 
 		k = t * np.mat([[m[0][0]],[m[0][1]],[1]])
-		d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[m[0][0]],[m[0][1]],[1]])
+		d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[m[1][0]],[m[1][1]],[1]])
 		# print sum(np.multiply(d,d))
-		if sum(np.multiply(d,d)) < 70000:
+		if sum(np.multiply(d,d)) < 20:
 			match_temp.append(m)
 	I = np.concatenate((im1,im2),axis=1)
 	for line in match_temp:
