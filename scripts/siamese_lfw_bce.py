@@ -35,7 +35,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
 					metavar='N', help='batch size (default: 8)')
-parser.add_argument('--learning_rate', default=1e-5, type=float,
+parser.add_argument('--learning_rate', default=1e-6, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 					help='momentum')
@@ -43,14 +43,17 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
-parser.add_argument('--test_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
+
+plot_x = []
+plot_y = []
 
 def imshow(img,text,should_save=False):
 	npimg = img.numpy()
@@ -150,8 +153,8 @@ def save_checkpoint(state, filename):
 
 
 def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
-	plot_counter = []
-	loss_history = [] 
+	
+	running_loss = 0.0
 	iteration_number= 0
 
 	for i, data in enumerate(train_dataloader,0):
@@ -163,15 +166,23 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		optimizer.zero_grad()
 		output= forward_pass(img0,img1)
 		# forward_pass.zero_grad()
-		# loss = criterion(output, label)
-		loss = F.binary_cross_entropy(output, label)
+		loss = criterion(output, label)
 		loss.backward()	
 		optimizer.step()
 		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss.data[0]))
-		iteration_number +=1
-		plot_counter.append(iteration_number)
-		loss_history.append(loss.data[0])
-	return plot_counter, loss_history
+		
+
+		running_loss += loss.data[0]
+		# print i, loss.data[0], "/", len(train_dataloader)
+
+		plot_x.append(len(plot_x)+1)
+		plot_y.append(loss.data[0])
+
+			
+	# 	iteration_number +=1
+	# 	plot_counter.append(iteration_number)
+	# 	loss_history.append(loss.data[0])
+	return running_loss
 
 
 def validate(test_dataloader, forward_pass, criterion):
@@ -188,8 +199,10 @@ def validate(test_dataloader, forward_pass, criterion):
 		output= forward_pass(img0,img1)
 		predicted = output.data > 0.5
 		predicted = predicted.type('torch.LongTensor')
+
 		label_data = label.data
 		label_data = label.data.type('torch.LongTensor')
+		print "predicted: ", predicted.data[0], "output: ", output.data[0], "label: ", label_data.data[0]
 		cnt += torch.sum(predicted == label_data)
 		total += label.size(0)
 		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
@@ -225,14 +238,18 @@ def main():
 	criterion = nn.BCELoss()
 	# criterion = F.binary_cross_entropy()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
-	plot_counter = []
-	loss_history = [] 
+	
+
+	correct = 0
+	total = 0
+	
+	training_plot = "p1a_trainloss.txt"
 	for epoch in range(args.start_epoch, args.epochs):
 
-		adjust_learning_rate(optimizer, epoch)
+		# adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		plot_counter, loss_history = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
 		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
@@ -246,16 +263,28 @@ def main():
 			# 'prec1': prec1,
 			}, save_name)
 
-	training_plot = "p1a_trainloss.txt"
+		print('[epoch %d] loss: %.3f' % (epoch + 1, running_loss/138))
 	with open(training_plot, 'w') as f:
-		for i in range(0, len(plot_counter)):
-			f.write(" ".join([str(plot_counter), str(loss_history)]))
+ 		for i in range(0,len(plot_x)):
+			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
 			f.write('\n')
 	print "done"		
 
-
+def plot_training_loss():
+    txt_file = 'p1a_trainloss.txt'
+    plot_x = []
+    plot_y = []
+    with open(txt_file, 'r') as f:
+        for line in f:
+            data = line.strip()
+            data = data.split(' ')
+            plot_x.append(int(data[0]))
+            plot_y.append(float(data[1]))
+    plt.plot(plot_x, plot_y, 'b')
+    plt.show()
 
 
 
 if __name__ == '__main__':
 	main()
+	plot_training_loss()
