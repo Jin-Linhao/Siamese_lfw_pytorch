@@ -29,7 +29,7 @@ from siamese_net_19 import SiameseNetwork
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=10, type=int, metavar='N',
+parser.add_argument('--epochs', default=2, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -43,7 +43,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/test.txt)')
@@ -72,14 +72,18 @@ def show_plot(iteration,loss):
 	plt.show()
 	
 
-def default_loader(path):
+def train_loader(path):
 	img = Image.open(path)
 	if args.aug != "off":
 		pix = np.array(img)
 		pix_aug = img_augmentation(pix)
 		img = Image.fromarray(np.uint8(pix_aug))
+	# print pix
 	return img
 
+def test_loader(path):
+	img = Image.open(path)
+	return img
 
 def default_list_reader(fileList):
 	imgList = []
@@ -92,7 +96,6 @@ def default_list_reader(fileList):
 			imgshortList.append(imgPath2)
 			imgshortList.append(label)
 			imgList.append(imgshortList)
-			
 	return imgList
 
 
@@ -101,9 +104,9 @@ def img_augmentation(img):
 
 		h, w, c= np.shape(img)
 		# scale
-		# if random.random() > 0.5:
-		# 	s = (random.random() - 0.5) / 1.7 + 1
-		# 	img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
+		if random.random() > 0.5:
+			s = (random.random() - 0.5) / 1.7 + 1
+			img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
 		# translation
 		if random.random() > 0.5:
 			img = scipy.ndimage.shift(img, (int(random.random() * 20 - 10), int(random.random() * 20 - 10), 0))
@@ -129,24 +132,48 @@ def img_augmentation(img):
 	return img_out
 
 
-class ImageList(data.Dataset):
-	def __init__(self, fileList, transform=None, list_reader=default_list_reader, loader=default_loader):
+class train_ImageList(data.Dataset):
+	def __init__(self, fileList, transform=None, list_reader=default_list_reader, train_loader=train_loader):
 		# self.root      = root
 		self.imgList   = list_reader(fileList)
 		self.transform = transform
-		self.loader    = loader
+		self.train_loader = train_loader
 
 	def __getitem__(self, index):
 		final = []
 		[imgPath1, imgPath2, target] = self.imgList[index]
-		img1 = self.loader(os.path.join(args.lfw_path, imgPath1))
-		img2 = self.loader(os.path.join(args.lfw_path, imgPath2))
+		img1 = self.train_loader(os.path.join(args.lfw_path, imgPath1))
+		img2 = self.train_loader(os.path.join(args.lfw_path, imgPath2))
+
+		# 
+		# img2 = self.img_augmentation(img2)
 		if self.transform is not None:
 			img1 = self.transform(img1)
 			img2 = self.transform(img2)
-#         img1 = self.loader(os.path.join(os.path.splitext(imgPath1)[0],imgPath1))
-#         img2 = self.loader(os.path.join(os.path.splitext(imgPath2)[0],imgPath2))
-#         print target
+		return img1, img2, torch.from_numpy(np.array([target],dtype=np.float32))
+
+	def __len__(self):
+		return len(self.imgList)
+
+
+class test_ImageList(data.Dataset):
+	def __init__(self, fileList, transform=None, list_reader=default_list_reader, test_loader=test_loader):
+		# self.root      = root
+		self.imgList   = list_reader(fileList)
+		self.transform = transform
+		self.test_loader = test_loader
+
+	def __getitem__(self, index):
+		final = []
+		[imgPath1, imgPath2, target] = self.imgList[index]
+		img1 = self.test_loader(os.path.join(args.lfw_path, imgPath1))
+		img2 = self.test_loader(os.path.join(args.lfw_path, imgPath2))
+
+		# 
+		# img2 = self.img_augmentation(img2)
+		if self.transform is not None:
+			img1 = self.transform(img1)
+			img2 = self.transform(img2)
 		return img1, img2, torch.from_numpy(np.array([target],dtype=np.float32))
 
 	def __len__(self):
@@ -211,11 +238,12 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
 	total = 0
+	forward_pass = SiameseNetwork().cuda()
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)
 		if args.cuda == "off":
-			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
+			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output1, output2 = forward_pass(img0, img1)
@@ -242,7 +270,7 @@ def main():
 	global args     
 	args = parser.parse_args()
 	train_dataloader = torch.utils.data.DataLoader(
-						ImageList(fileList=args.train_list, 
+						train_ImageList(fileList=args.train_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
@@ -251,7 +279,7 @@ def main():
 						batch_size=args.batch_size)
 
 	test_dataloader = torch.utils.data.DataLoader(
-						ImageList(fileList=args.train_list, 
+						test_ImageList(fileList=args.train_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
@@ -267,6 +295,10 @@ def main():
 	criterion = ContrastiveLoss()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
 
+	validate_plotx = []
+	validate_ploty = []
+	training_plot = "p1b_trainloss.txt"
+	validate_plot = "p1b_validate.txt"
 	for epoch in range(args.start_epoch, args.epochs):
 
 		adjust_learning_rate(optimizer, epoch)
@@ -274,6 +306,10 @@ def main():
 		# train for one epoch
 		running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
+
+		validate_plotx.append(epoch+1)
+		validate_ploty.append(float(correct)/total)
+
 		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
 		# evaluate on validation set
@@ -284,10 +320,14 @@ def main():
 	        'state_dict': forward_pass.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
-	training_plot = "p1b_trainloss.txt"
 	with open(training_plot, 'w') as f:
 		for i in range(0, len(plot_x)):
 			f.write(" ".join([str(plot_x[i]), str(plot_y[i])]))
+			f.write('\n')
+
+	with open(validate_plot, 'w') as f:
+		for i in range(0,len(validate_plotx)):
+			f.write(" ".join([str(validate_plotx[i]),str(validate_ploty[i])]))
 			f.write('\n')
 	print "done"		
 
@@ -301,9 +341,25 @@ def plot_training_loss():
             data = data.split(' ')
             plot_x.append(int(data[0]))
             plot_y.append(float(data[1]))
-    plt.plot(plot_x, plot_y, 'b')
-    plt.show()
+    plt.plot(plot_x, plot_y, 'b', label = "training los")
+    plt.title('training loss')
+	plt.show()
+
+def plot_text_loss():
+	txt_file = 'p1b_validate.txt'
+	plot_x = []
+	plot_y = []
+	with open(txt_file, 'r') as f:
+		for line in f:
+			data = line.strip()
+			data = data.split(' ')
+			plot_x.append(int(data[0]))
+			plot_y.append(float(data[1]))
+	plt.plot(plot_x, plot_y, 'r', label = "validate accuracy")
+	plt.title('validate accuracy')
+	plt.show()
 
 if __name__ == '__main__':
 	main()
 	plot_training_loss()
+	plot_text_loss()

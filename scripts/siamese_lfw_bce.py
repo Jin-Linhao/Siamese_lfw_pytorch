@@ -105,9 +105,9 @@ def img_augmentation(img):
 
 		h, w, c= np.shape(img)
 		# scale
-		# if random.random() > 0.5:
-		# 	s = (random.random() - 0.5) / 1.7 + 1
-		# 	img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
+		if random.random() > 0.5:
+			s = (random.random() - 0.5) / 1.7 + 1
+			img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
 		# translation
 		if random.random() > 0.5:
 			img = scipy.ndimage.shift(img, (int(random.random() * 20 - 10), int(random.random() * 20 - 10), 0))
@@ -146,7 +146,6 @@ class train_ImageList(data.Dataset):
 		img1 = self.train_loader(os.path.join(args.lfw_path, imgPath1))
 		img2 = self.train_loader(os.path.join(args.lfw_path, imgPath2))
 
-		# 
 		# img2 = self.img_augmentation(img2)
 		if self.transform is not None:
 			img1 = self.transform(img1)
@@ -215,13 +214,10 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		optimizer.step()
 		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss.data[0]))
 		
-
 		running_loss += loss.data[0]
 		# print i, loss.data[0], "/", len(train_dataloader)
-
 		plot_x.append(len(plot_x)+1)
 		plot_y.append(loss.data[0])
-
 	return running_loss
 
 
@@ -280,7 +276,6 @@ def main():
 	# criterion = F.binary_cross_entropy()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
 	
-
 	correct = 0
 	total = 0
 
@@ -317,7 +312,7 @@ def main():
 			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
 			f.write('\n')
 
-	with open(training_plot, 'w') as f:
+	with open(validate_plot, 'w') as f:
 		for i in range(0,len(validate_plotx)):
 			f.write(" ".join([str(validate_plotx[i]),str(validate_ploty[i])]))
 			f.write('\n')
@@ -334,6 +329,7 @@ def plot_training_loss():
 			plot_x.append(int(data[0]))
 			plot_y.append(float(data[1]))
 	plt.plot(plot_x, plot_y, 'b')
+	plt.title('training loss')
 	plt.show()
 
 def plot_text_loss():
@@ -347,6 +343,7 @@ def plot_text_loss():
 			plot_x.append(int(data[0]))
 			plot_y.append(float(data[1]))
 	plt.plot(plot_x, plot_y, 'b')
+	plt.title('validate accuracy')
 	plt.show()
 
 if __name__ == '__main__':
