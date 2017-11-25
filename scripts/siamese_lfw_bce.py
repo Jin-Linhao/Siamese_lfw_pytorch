@@ -29,7 +29,7 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1, type=int, metavar='N',
+parser.add_argument('--epochs', default=10, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -72,7 +72,7 @@ def show_plot(iteration,loss):
 	plt.show()
 	
 
-def default_loader(path):
+def train_loader(path):
 	img = Image.open(path)
 	if args.aug != "off":
 		pix = np.array(img)
@@ -81,6 +81,9 @@ def default_loader(path):
 	# print pix
 	return img
 
+def test_loader(path):
+	img = Image.open(path)
+	return img
 
 def default_list_reader(fileList):
 	imgList = []
@@ -130,18 +133,42 @@ def img_augmentation(img):
 	return img_out
 
 	
-class ImageList(data.Dataset):
-	def __init__(self, fileList, transform=None, list_reader=default_list_reader, loader=default_loader):
+class train_ImageList(data.Dataset):
+	def __init__(self, fileList, transform=None, list_reader=default_list_reader, train_loader=train_loader):
 		# self.root      = root
 		self.imgList   = list_reader(fileList)
 		self.transform = transform
-		self.loader    = loader
+		self.train_loader = train_loader
 
 	def __getitem__(self, index):
 		final = []
 		[imgPath1, imgPath2, target] = self.imgList[index]
-		img1 = self.loader(os.path.join(args.lfw_path, imgPath1))
-		img2 = self.loader(os.path.join(args.lfw_path, imgPath2))
+		img1 = self.train_loader(os.path.join(args.lfw_path, imgPath1))
+		img2 = self.train_loader(os.path.join(args.lfw_path, imgPath2))
+
+		# 
+		# img2 = self.img_augmentation(img2)
+		if self.transform is not None:
+			img1 = self.transform(img1)
+			img2 = self.transform(img2)
+		return img1, img2, torch.from_numpy(np.array([target],dtype=np.float32))
+
+	def __len__(self):
+		return len(self.imgList)
+
+
+class test_ImageList(data.Dataset):
+	def __init__(self, fileList, transform=None, list_reader=default_list_reader, test_loader=test_loader):
+		# self.root      = root
+		self.imgList   = list_reader(fileList)
+		self.transform = transform
+		self.test_loader = test_loader
+
+	def __getitem__(self, index):
+		final = []
+		[imgPath1, imgPath2, target] = self.imgList[index]
+		img1 = self.test_loader(os.path.join(args.lfw_path, imgPath1))
+		img2 = self.test_loader(os.path.join(args.lfw_path, imgPath2))
 
 		# 
 		# img2 = self.img_augmentation(img2)
@@ -157,7 +184,7 @@ class ImageList(data.Dataset):
 
 def adjust_learning_rate(optimizer, epoch):
 	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-	lr = 0.01 * (0.1 ** (epoch//3))
+	lr = 0.01 * (0.1 ** (epoch//6))
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
 
@@ -195,10 +222,6 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		plot_x.append(len(plot_x)+1)
 		plot_y.append(loss.data[0])
 
-			
-	# 	iteration_number +=1
-	# 	plot_counter.append(iteration_number)
-	# 	loss_history.append(loss.data[0])
 	return running_loss
 
 
@@ -222,9 +245,6 @@ def validate(test_dataloader, forward_pass, criterion):
 			label_data = label.data.type('torch.LongTensor')
 			cnt += torch.sum(predicted == label_data[j])
 			total = total+1
-
-		# print "predicted: ", predicted.data[0], "output: ", output.data[0], "label: ", label.data[0]
-		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
 	print('Accuracy of the network on the all test images: %d %%' % (100 * cnt / total))
 
 	return cnt, total
@@ -234,7 +254,7 @@ def main():
 	global args     
 	args = parser.parse_args()
 	train_dataloader = torch.utils.data.DataLoader(
-						ImageList(fileList=args.train_list, 
+						train_ImageList(fileList=args.train_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
@@ -243,7 +263,7 @@ def main():
 						batch_size=args.batch_size)
 
 	test_dataloader = torch.utils.data.DataLoader(
-						ImageList(fileList=args.test_list, 
+						test_ImageList(fileList=args.test_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
@@ -263,8 +283,12 @@ def main():
 
 	correct = 0
 	total = 0
+
+	validate_plotx = []
+	validate_ploty = []
 	
 	training_plot = "p1a_trainloss.txt"
+	validate_plot = "p1a_validate.txt"
 	for epoch in range(args.start_epoch, args.epochs):
 
 		# adjust_learning_rate(optimizer, epoch)
@@ -274,13 +298,16 @@ def main():
 		correct, total = validate(test_dataloader, forward_pass, criterion)
 		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
+
+		validate_plotx.append(epoch+1)
+		validate_ploty.append(float(correct)/total)
 		# evaluate on validation set
 		# prec1 = validate(val_loader, model, criterion)
 		save_name = args.save_path + str(epoch) + '_checkpoint.pth.tar'
 		save_checkpoint({
 			'epoch': epoch + 1,
 	#         'arch': args.arch,
-	#         'state_dict': model.state_dict(),
+	        'state_dict': forward_pass.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
 
@@ -288,6 +315,11 @@ def main():
 	with open(training_plot, 'w') as f:
 		for i in range(0,len(plot_x)):
 			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
+			f.write('\n')
+
+	with open(training_plot, 'w') as f:
+		for i in range(0,len(validate_plotx)):
+			f.write(" ".join([str(validate_plotx[i]),str(validate_ploty[i])]))
 			f.write('\n')
 	print "done"		
 

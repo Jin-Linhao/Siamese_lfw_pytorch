@@ -234,7 +234,7 @@ def validate(test_dataloader, forward_pass, criterion):
 			label_data = label.data.type('torch.LongTensor')
 			cnt += torch.sum(predicted == label_data[j])
 			total += 1
-			print "mean: ",dis,  "euclidean_distance: ", euclidean_distance.data[j], "label", label.data[j], "predicted", predicted
+			# print "mean: ",dis,  "euclidean_distance: ", euclidean_distance.data[j], "label", label.data[j], "predicted", predicted
 	return cnt, total
 
 
@@ -281,7 +281,7 @@ def main():
 		save_checkpoint({
 			'epoch': epoch + 1,
 	#         'arch': args.arch,
-	#         'state_dict': model.state_dict(),
+	        'state_dict': forward_pass.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
 	training_plot = "p1b_trainloss.txt"
