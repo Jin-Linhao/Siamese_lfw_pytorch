@@ -24,13 +24,13 @@ from siamese_net_19 import SiameseNetwork
 
 
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
 parser.add_argument('--epochs', default=3, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
 					metavar='N', help='batch size (default: 8)')
 parser.add_argument('--learning_rate', default=0.01, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
@@ -149,7 +149,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
-
+		output1, output2 = forward_pass(img0, img1)
 		optimizer.zero_grad()
 		loss_contrastive = criterion(output1,output2,label)
 		loss_contrastive.backward()
