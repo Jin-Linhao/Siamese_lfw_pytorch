@@ -49,6 +49,8 @@ parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
+parser.add_argument('--aug', default='off', type=str,
+					help='turn on img augmentation (default: False)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
 
@@ -72,9 +74,10 @@ def show_plot(iteration,loss):
 
 def default_loader(path):
 	img = Image.open(path)
-	pix = np.array(img)
-	pix_aug = img_augmentation(pix)
-	img = Image.fromarray(np.uint8(pix_aug))
+	if args.aug != "off":
+		pix = np.array(img)
+		pix_aug = img_augmentation(pix)
+		img = Image.fromarray(np.uint8(pix_aug))
 	# print pix
 	return img
 

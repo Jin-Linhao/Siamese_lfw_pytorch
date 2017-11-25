@@ -19,6 +19,9 @@ from torch import optim
 import torch.nn.functional as F
 import torch.utils.data as data
 import os
+import scipy
+from scipy import ndimage
+import scipy.misc
 
 from siamese_net_19 import SiameseNetwork
 
@@ -26,7 +29,7 @@ from siamese_net_19 import SiameseNetwork
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1, type=int, metavar='N',
+parser.add_argument('--epochs', default=10, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -40,12 +43,14 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/test.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
+parser.add_argument('--aug', default='off', type=str,
+					help='turn on img augmentation (default: False)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
 
@@ -69,9 +74,10 @@ def show_plot(iteration,loss):
 
 def default_loader(path):
 	img = Image.open(path)
-	pix = np.array(img)
-	pix_aug = img_augmentation(pix)
-	img = Image.fromarray(np.uint8(pix_aug))
+	if args.aug != "off":
+		pix = np.array(img)
+		pix_aug = img_augmentation(pix)
+		img = Image.fromarray(np.uint8(pix_aug))
 	return img
 
 
