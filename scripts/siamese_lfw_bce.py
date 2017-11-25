@@ -19,6 +19,9 @@ from torch import optim
 import torch.nn.functional as F
 import torch.utils.data as data
 import os
+import scipy
+from scipy import ndimage
+import scipy.misc
 
 from siamese_19_BCE import SiameseNetwork_BCE
 
@@ -26,7 +29,7 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1, type=int, metavar='N',
+parser.add_argument('--epochs', default=6, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -40,7 +43,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
@@ -83,6 +86,30 @@ def default_list_reader(fileList):
 			
 	return imgList
 
+def transform(img):
+	if random.random()>0.7:
+		h, w, c = np.shape(img)
+		# if random.random() > 0.5:
+		# 	s = (random.random() - 0.5)/1.7+1
+		# 	img = scipy.misc.imresize(img, (int(h*s), int(w*s)))
+		# if random.random() > 0.5:
+		# 	img = ndimage.shift(img, (int(random.random()*20 - 10), int(random.random()*20 - 10)))
+		if random.random() > 0.5:
+			img = ndimage.rotate(img, random.random()*60 -30)
+		if random.random() > 0.5:
+			img = np.flip(img,1)
+		h_c, w_c = img.shape[:2]
+		if h_c > h:
+			top = int(h_c/2 - h/2)
+			left = int(w_c/2 - w/2)
+			img_out = img[top: top + h, left:left+w]
+		else:
+			pad_size = int((h-h_c)/2)
+			pads = ((pad_size, pad_size), (pad_size, pad_size), (0,0))
+			img_out = np.pad(np.array(img), pads, 'costant', constant_values=0)
+	else:
+		img_out = img
+	return img_out
 
 class ImageList(data.Dataset):
 	def __init__(self, fileList, transform=None, list_reader=default_list_reader, loader=default_loader):
@@ -96,9 +123,12 @@ class ImageList(data.Dataset):
 		[imgPath1, imgPath2, target] = self.imgList[index]
 		img1 = self.loader(os.path.join(args.lfw_path, imgPath1))
 		img2 = self.loader(os.path.join(args.lfw_path, imgPath2))
+		# img1 = transform(img1)
+		# img2 = transform(img2)
 		if self.transform is not None:
 			img1 = self.transform(img1)
 			img2 = self.transform(img2)
+
 #         img1 = self.loader(os.path.join(os.path.splitext(imgPath1)[0],imgPath1))
 #         img2 = self.loader(os.path.join(os.path.splitext(imgPath2)[0],imgPath2))
 #         print target
@@ -132,7 +162,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
-		forward_pass.zero_grad()
+		# forward_pass.zero_grad()
 		# loss = criterion(output, label)
 		loss = F.binary_cross_entropy(output, label)
 		loss.backward()	
@@ -152,7 +182,7 @@ def validate(test_dataloader, forward_pass, criterion):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)	
 		if args.cuda == "off":
-			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda(), Variable(label).cuda()
+			img0, img1 , label = Variable(img0, volatile = True).cuda(), Variable(img1, volatile = True).cuda(), Variable(label, volatile = True).cuda()
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
@@ -204,7 +234,7 @@ def main():
 		# train for one epoch
 		plot_counter, loss_history = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
-		print correct, total
+		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
 		# evaluate on validation set
 		# prec1 = validate(val_loader, model, criterion)
@@ -224,30 +254,7 @@ def main():
 	print "done"		
 
 
-def transform(self, img):
-	if random.random()>0.7:
-		h, w, c = np.shape(img)
-		if random.random() > 0.5:
-			s = (ransom.random() - 0.5)/1.7+1
-			img = scipy.misc.imresize(img, (int(h*s), int(w*s)))
-		if random.random() > 0.5:
-			img = ndimage.shift(img, (int(random.random()*20 - 10), int(random.random()*20 - 10)))
-		if random.random() > 0.5:
-			img = scipy.ndimage.rotate(img, random.random()*60 -30)
-		if random.random() > 0.5:
-			img = np.flip(img,1)
-		h_c, w_c = img.shape[:2]
-		if h_c > h:
-			top = int(h_c/2 - h/2)
-			left = int(w_c/2 - w/2)
-			img_out = img[top: top + h, left:left+w]
-		else:
-			pad_size = int((h-h_c)/2)
-			pads = ((pad_size, pad_size), (pad_size, pad_size), (0,0))
-			img_out = np.pad(np.array(img), pads, 'costant', costant_values=0)
-	else:
-		img_out = img
-	return img_out
+
 
 
 if __name__ == '__main__':

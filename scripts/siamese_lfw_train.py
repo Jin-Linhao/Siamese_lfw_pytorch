@@ -158,9 +158,12 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		iteration_number +=1
 		plot_counter.append(iteration_number)
 		loss_history.append(loss_contrastive.data[0])
+	return plot_counter, loss_history
 
 
 def validate(test_dataloader, forward_pass, criterion):
+	cnt = 0
+	total = 0
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)
@@ -171,8 +174,14 @@ def validate(test_dataloader, forward_pass, criterion):
 		output1, output2 = forward_pass(img0, img1)
 		euclidean_distance = F.pairwise_distance(output1,output2)
 		
-		imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
-
+		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
+		predicted = euclidean_distance.data > 1
+		predicted = predicted.type('torch.LongTensor')
+		label_data = label.data
+		label_data = label.data.type('torch.LongTensor')
+		cnt += torch.sum(predicted == label_data)
+		total += label.size(0)
+	return cnt, total
 
 
 def main():
@@ -203,16 +212,18 @@ def main():
 	# forward_pass = SiameseNetwork()
 	criterion = ContrastiveLoss()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
-
+	plot_counter = []
+	loss_history = []
 	for epoch in range(args.start_epoch, args.epochs):
 
 		adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		train(train_dataloader, forward_pass, criterion, optimizer, epoch)
-		validate(test_dataloader, forward_pass, criterion)
+		plot_counter, loss_history = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		correct, total = validate(test_dataloader, forward_pass, criterion)
+		print "correct matches: ", correct, "total matches: ", total
+		print "total accuracy = ", float(correct)/total
 		# evaluate on validation set
-		# prec1 = validate(val_loader, model, criterion)
 		save_name = args.save_path + str(epoch) + '_checkpoint.pth.tar'
 		save_checkpoint({
 			'epoch': epoch + 1,
@@ -220,7 +231,12 @@ def main():
 	#         'state_dict': model.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
-
+	training_plot = "p1b_trainloss.txt"
+	with open(training_plot, 'w') as f:
+		for i in range(0, len(plot_counter)):
+			f.write(" ".join([str(plot_counter), str(loss_history)]))
+			f.write('\n')
+	print "done"		
 
 if __name__ == '__main__':
 	main()
