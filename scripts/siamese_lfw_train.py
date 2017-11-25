@@ -69,6 +69,9 @@ def show_plot(iteration,loss):
 
 def default_loader(path):
 	img = Image.open(path)
+	pix = np.array(img)
+	pix_aug = img_augmentation(pix)
+	img = Image.fromarray(np.uint8(pix_aug))
 	return img
 
 
@@ -85,6 +88,39 @@ def default_list_reader(fileList):
 			imgList.append(imgshortList)
 			
 	return imgList
+
+
+def img_augmentation(img):
+	if random.random()>0.7:
+
+		h, w, c= np.shape(img)
+		# scale
+		# if random.random() > 0.5:
+		# 	s = (random.random() - 0.5) / 1.7 + 1
+		# 	img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
+		# translation
+		if random.random() > 0.5:
+			img = scipy.ndimage.shift(img, (int(random.random() * 20 - 10), int(random.random() * 20 - 10), 0))
+		# rotation
+		if random.random() > 0.5:
+			img = scipy.ndimage.rotate(img, random.random() * 60 - 30)
+		# flipping
+		if random.random() > 0.5:
+			img = np.flip(img, 1)
+		# crop and padding
+		h_c, w_c = img.shape[:2]
+		if h_c > h:
+			top = int(h_c / 2 - h / 2)
+			left = int(w_c / 2 - w / 2)
+			img_out = img[top: top + h, left: left + w]
+		else:
+			pad_size = int((h - h_c) / 2)
+			pads = ((pad_size, pad_size), (pad_size, pad_size), (0, 0))
+			img_out = np.pad(np.array(img), pads, 'constant', constant_values=0)
+	else:
+		img_out = img
+	# print np.shape(img_out)
+	return img_out
 
 
 class ImageList(data.Dataset):

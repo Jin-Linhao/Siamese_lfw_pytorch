@@ -29,7 +29,7 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=10, type=int, metavar='N',
+parser.add_argument('--epochs', default=1, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -72,6 +72,10 @@ def show_plot(iteration,loss):
 
 def default_loader(path):
 	img = Image.open(path)
+	pix = np.array(img)
+	pix_aug = img_augmentation(pix)
+	img = Image.fromarray(np.uint8(pix_aug))
+	# print pix
 	return img
 
 
@@ -89,31 +93,40 @@ def default_list_reader(fileList):
 			
 	return imgList
 
-def transform(img):
+
+def img_augmentation(img):
 	if random.random()>0.7:
-		h, w, c = np.shape(img)
+
+		h, w, c= np.shape(img)
+		# scale
 		# if random.random() > 0.5:
-		# 	s = (random.random() - 0.5)/1.7+1
-		# 	img = scipy.misc.imresize(img, (int(h*s), int(w*s)))
-		# if random.random() > 0.5:
-		# 	img = ndimage.shift(img, (int(random.random()*20 - 10), int(random.random()*20 - 10)))
+		# 	s = (random.random() - 0.5) / 1.7 + 1
+		# 	img = scipy.misc.imresize(img, (int(h * s), int(w * s)))
+		# translation
 		if random.random() > 0.5:
-			img = ndimage.rotate(img, random.random()*60 -30)
+			img = scipy.ndimage.shift(img, (int(random.random() * 20 - 10), int(random.random() * 20 - 10), 0))
+		# rotation
 		if random.random() > 0.5:
-			img = np.flip(img,1)
+			img = scipy.ndimage.rotate(img, random.random() * 60 - 30)
+		# flipping
+		if random.random() > 0.5:
+			img = np.flip(img, 1)
+		# crop and padding
 		h_c, w_c = img.shape[:2]
 		if h_c > h:
-			top = int(h_c/2 - h/2)
-			left = int(w_c/2 - w/2)
-			img_out = img[top: top + h, left:left+w]
+			top = int(h_c / 2 - h / 2)
+			left = int(w_c / 2 - w / 2)
+			img_out = img[top: top + h, left: left + w]
 		else:
-			pad_size = int((h-h_c)/2)
-			pads = ((pad_size, pad_size), (pad_size, pad_size), (0,0))
-			img_out = np.pad(np.array(img), pads, 'costant', constant_values=0)
+			pad_size = int((h - h_c) / 2)
+			pads = ((pad_size, pad_size), (pad_size, pad_size), (0, 0))
+			img_out = np.pad(np.array(img), pads, 'constant', constant_values=0)
 	else:
 		img_out = img
+	# print np.shape(img_out)
 	return img_out
 
+	
 class ImageList(data.Dataset):
 	def __init__(self, fileList, transform=None, list_reader=default_list_reader, loader=default_loader):
 		# self.root      = root
@@ -126,19 +139,17 @@ class ImageList(data.Dataset):
 		[imgPath1, imgPath2, target] = self.imgList[index]
 		img1 = self.loader(os.path.join(args.lfw_path, imgPath1))
 		img2 = self.loader(os.path.join(args.lfw_path, imgPath2))
-		# img1 = transform(img1)
-		# img2 = transform(img2)
+
+		# 
+		# img2 = self.img_augmentation(img2)
 		if self.transform is not None:
 			img1 = self.transform(img1)
 			img2 = self.transform(img2)
-
-#         img1 = self.loader(os.path.join(os.path.splitext(imgPath1)[0],imgPath1))
-#         img2 = self.loader(os.path.join(os.path.splitext(imgPath2)[0],imgPath2))
-#         print target
 		return img1, img2, torch.from_numpy(np.array([target],dtype=np.float32))
 
 	def __len__(self):
 		return len(self.imgList)
+
 
 
 def adjust_learning_rate(optimizer, epoch):
@@ -159,10 +170,12 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 
 	for i, data in enumerate(train_dataloader,0):
 		img0, img1 , label = data
+
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
+
 		optimizer.zero_grad()
 		output= forward_pass(img0,img1)
 		# print output
@@ -198,7 +211,7 @@ def validate(test_dataloader, forward_pass, criterion):
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
-		print "output", output.data
+		# print "output", output.data
 		for j in range(0, label.size(0)):
 			predicted = output.data[j] > 0.5
 			predicted = predicted.type('torch.LongTensor')
@@ -270,23 +283,23 @@ def main():
 
 		print('[Epoch %d] loss: %.3f' % (epoch + 1, running_loss/138))
 	with open(training_plot, 'w') as f:
- 		for i in range(0,len(plot_x)):
+		for i in range(0,len(plot_x)):
 			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
 			f.write('\n')
 	print "done"		
 
 def plot_training_loss():
-    txt_file = 'p1a_trainloss.txt'
-    plot_x = []
-    plot_y = []
-    with open(txt_file, 'r') as f:
-        for line in f:
-            data = line.strip()
-            data = data.split(' ')
-            plot_x.append(int(data[0]))
-            plot_y.append(float(data[1]))
-    plt.plot(plot_x, plot_y, 'b')
-    plt.show()
+	txt_file = 'p1a_trainloss.txt'
+	plot_x = []
+	plot_y = []
+	with open(txt_file, 'r') as f:
+		for line in f:
+			data = line.strip()
+			data = data.split(' ')
+			plot_x.append(int(data[0]))
+			plot_y.append(float(data[1]))
+	plt.plot(plot_x, plot_y, 'b')
+	plt.show()
 
 
 

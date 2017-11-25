@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 import torch.nn as nn
-
 class SiameseNetwork(nn.Module):
     def __init__(self):
         super(SiameseNetwork, self).__init__()
@@ -42,3 +41,8 @@ class SiameseNetwork(nn.Module):
         output1 = self.forward_once(input1)
         output2 = self.forward_once(input2)
         return output1, output2
+
+
+
+
+
