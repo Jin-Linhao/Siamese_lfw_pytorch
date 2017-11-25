@@ -26,7 +26,7 @@ from siamese_net_19 import SiameseNetwork
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=10, type=int, metavar='N',
+parser.add_argument('--epochs', default=1, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -224,8 +224,7 @@ def main():
 	# forward_pass = SiameseNetwork()
 	criterion = ContrastiveLoss()
 	optimizer = optim.Adam(forward_pass.parameters(), lr = args.learning_rate )
-	plot_counter = []
-	loss_history = []
+
 	for epoch in range(args.start_epoch, args.epochs):
 
 		adjust_learning_rate(optimizer, epoch)
@@ -245,8 +244,8 @@ def main():
 			}, save_name)
 	training_plot = "p1b_trainloss.txt"
 	with open(training_plot, 'w') as f:
-		for i in range(0, len(plot_counter)):
-			f.write(" ".join([str(plot_counter), str(loss_history)]))
+		for i in range(0, len(plot_x)):
+			f.write(" ".join([str(plot_x[i]), str(plot_y[i])]))
 			f.write('\n')
 	print "done"		
 
