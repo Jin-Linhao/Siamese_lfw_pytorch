@@ -40,14 +40,17 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
-parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
+
+plot_x = []
+plot_y = []
 
 def imshow(img,text,should_save=False):
 	npimg = img.numpy()
@@ -113,15 +116,15 @@ class ContrastiveLoss(torch.nn.Module):
 	Contrastive loss function.
 	Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
 	"""
-	def __init__(self, margin=24.0):
+	def __init__(self, margin=1):
 		super(ContrastiveLoss, self).__init__()
-		margin = args.batch_size*3
+		# margin = args.batch_size*3
 		self.margin = margin
 
 
 	def forward(self, output1, output2, label):
 		euclidean_distance = F.pairwise_distance(output1, output2)
-#        print euclidean_distance, "label: ", label
+		# print euclidean_distance, "label: ", label
 		loss_contrastive = torch.mean((label) * torch.pow(euclidean_distance, 2) +
 									  (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 		return loss_contrastive
@@ -154,11 +157,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 		loss_contrastive = criterion(output1,output2,label)
 		loss_contrastive.backward()
 		optimizer.step()
+
 		print("Epoch: {}, current iter: {}/{}\n Current loss {}\n".format(epoch, i, len(train_dataloader), loss_contrastive.data[0]))
-		iteration_number +=1
-		plot_counter.append(iteration_number)
-		loss_history.append(loss_contrastive.data[0])
-	return plot_counter, loss_history
+		running_loss += loss_contrastive.data[0]
+		# print i, loss.data[0], "/", len(train_dataloader)
+
+		plot_x.append(len(plot_x)+1)
+		plot_y.append(loss_contrastive.data[0])
+	return running_loss
 
 
 def validate(test_dataloader, forward_pass, criterion):
@@ -175,12 +181,19 @@ def validate(test_dataloader, forward_pass, criterion):
 		euclidean_distance = F.pairwise_distance(output1,output2)
 		
 		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(euclidean_distance.cpu().data.numpy()[0][0], label))
-		predicted = euclidean_distance.data > 1
-		predicted = predicted.type('torch.LongTensor')
-		label_data = label.data
-		label_data = label.data.type('torch.LongTensor')
-		cnt += torch.sum(predicted == label_data)
-		total += label.size(0)
+		dis = 0
+		sum = 0
+		for j in range(0, label.size(0)):
+			sum = euclidean_distance.data[j] + sum
+			dis = sum/8
+		for k in range(0, label.size(0)):
+			predicted = euclidean_distance.data[j] < dis
+			predicted = predicted.type('torch.LongTensor')
+			label_data = label.data
+			label_data = label.data.type('torch.LongTensor')
+			cnt += torch.sum(predicted == label_data[j])
+			total += 1
+			print "mean: ",dis,  "euclidean_distance: ", euclidean_distance.data[j], "label", label.data[j], "predicted", predicted
 	return cnt, total
 
 
@@ -203,7 +216,7 @@ def main():
 								transforms.ToTensor(),            ])),
 						shuffle=False,
 						num_workers=args.workers,
-						batch_size=1)
+						batch_size=8)
 
 	if args.cuda == "off":
 		forward_pass = SiameseNetwork()
@@ -238,5 +251,19 @@ def main():
 			f.write('\n')
 	print "done"		
 
+def plot_training_loss():
+    txt_file = 'p1b_trainloss.txt'
+    plot_x = []
+    plot_y = []
+    with open(txt_file, 'r') as f:
+        for line in f:
+            data = line.strip()
+            data = data.split(' ')
+            plot_x.append(int(data[0]))
+            plot_y.append(float(data[1]))
+    plt.plot(plot_x, plot_y, 'b')
+    plt.show()
+
 if __name__ == '__main__':
 	main()
+	plot_training_loss()
