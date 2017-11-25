@@ -29,7 +29,7 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=10, type=int, metavar='N',
+parser.add_argument('--epochs', default=3, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -43,9 +43,9 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
-parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
+parser.add_argument('--test_list', default='../data/test1.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
@@ -228,14 +228,14 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
 	total = 0
-	forward_pass = SiameseNetwork_BCE().cuda()
+	# forward_pass = SiameseNetwork_BCE().cuda()
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1, label = data
 		# concatenated = torch.cat((img0, img1),0)	
 		if args.cuda == "off":
-			img0, img1 , label = Variable(img0, volatile = True).cuda(), Variable(img1, volatile = True).cuda(), Variable(label, volatile = True).cuda()
+			img0, img1 , label = Variable(img0), Variable(img1), Variable(label)
 		else:
-			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
+			img0, img1 , label = Variable(img0, volatile = True).cuda(), Variable(img1, volatile = True).cuda() , Variable(label, volatile = True).cuda()
 		output= forward_pass(img0,img1)
 		# print "output", output.data
 		for j in range(0, label.size(0)):
@@ -336,8 +336,20 @@ def plot_training_loss():
 	plt.plot(plot_x, plot_y, 'b')
 	plt.show()
 
-
+def plot_text_loss():
+	txt_file = 'p1a_validate.txt'
+	plot_x = []
+	plot_y = []
+	with open(txt_file, 'r') as f:
+		for line in f:
+			data = line.strip()
+			data = data.split(' ')
+			plot_x.append(int(data[0]))
+			plot_y.append(float(data[1]))
+	plt.plot(plot_x, plot_y, 'b')
+	plt.show()
 
 if __name__ == '__main__':
 	main()
 	plot_training_loss()
+	plot_text_loss()
