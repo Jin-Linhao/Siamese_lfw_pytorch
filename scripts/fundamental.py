@@ -110,7 +110,7 @@ def ransac(matches):
 			
 			d = np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]) - np.mat([[j[1][0]],[j[1][1]],[1]])
 			# print np.mat([[(k[0,0] / k[2,0])],[k[1,0] / k[2,0]],[1]]), np.mat([[j[1][0]],[j[1][1]],[1]])
-			print sum(np.multiply(d,d))
+			# print sum(np.multiply(d,d))
 			if sum(np.multiply(d,d)) < 300:
 				count += 1
 
@@ -145,10 +145,10 @@ def plot(matches, t, im1, im2):
 	A = np.mat(np.zeros((1,9)))
 
 	for i in match_temp:
-		x = i[0][0]
-		y = i[0][1]
-		x_p = i[1][0]
-		y_p = i[1][1]
+		x = i[0][1]
+		y = i[0][0]
+		x_p = i[1][1]
+		y_p = i[1][0]
 		
 		r = np.mat([[x * x_p, x * y_p, x, y * x_p, y * y_p, y, x_p, y_p, 1]])
 		A = np.vstack((A,r))
@@ -158,45 +158,47 @@ def plot(matches, t, im1, im2):
 	v = abs(np.real(v))
 	w = np.real(w)
 	f = np.reshape(w[:,np.argmin(v)],(3,3))
-
-	lst = random.sample(match_temp,4)
+	print "fundamental matrix: ", f
+	
+	lst = random.sample(match_temp,8)
 	I = np.concatenate((im1,im2),axis=1)
 	for i in lst:
-		ul = i[0][0]
-		vl = i[0][1]
-		ur = i[1][0]
-		vr = i[1][1]
+		ul = i[0][1]
+		vl = i[0][0]
+		ur = i[1][1]
+		vr = i[1][0]
 		k = np.mat([[ul,vl,1]]) * f
 		a = k[0,0]
 		b = k[0,1]
 		c = k[0,2]
 		color = (random.randrange(250),random.randrange(250),random.randrange(250))
-		cv2.circle(I,(int(ul),int(vl)),10,color,2)
+		cv2.circle(I,(int(vl),int(ul)),10,color,2)
 
-		cv2.circle(I,(int(ur)+im1.shape[1],int(vr)),10,color,2)
-		x1 = -c / a
+		cv2.circle(I,(int(vr)+im1.shape[1],int(ur)),10,color,2)
+		x1 = -float(c) / a
 		y1 = 0
 		x2 = 0
-		y2 = -c / b
+		y2 = -float(c) / b
 		if x1 < 0:
-			if (-c - b * im1.shape[1]) / a < im1.shape[0]:
-				x1 = (-c - b * im1.shape[1]) / a
+			if float(-c - b * im1.shape[1]) / a < im1.shape[0]:
+				x1 = float(-c - b * im1.shape[1]) / a
 				y1 = im1.shape[1]
 			else:
 				x1  = im1.shape[0]
-				y1  = (-c - a * x1) / b
+				y1  = float(-c - a * x1) / b
 		if x1 > im1.shape[0]:
 			x1  = im1.shape[0]
-			y1  = (-c - a * x1) / b
-			if (-c - b * im1.shape[1]) / a > 0:
-				x2 = (-c - b * im1.shape[1]) / a
+			y1  = float(-c - a * x1) / b
+			if float(-c - b * im1.shape[1]) / a > 0:
+				x2 = float(-c - b * im1.shape[1]) / a
 				y2 = im1.shape[1]
 		if y2 < 0:
 			x2 = im1.shape[0]
-			y2 = (-c - a * x2) / b
+			y2 = float(-c - a * x2) / b
 		if y2 > im1.shape[1]:
-			x2 = (-c - b * im1.shape[1]) / a
+			x2 = float(-c - b * im1.shape[1]) / a
 			y2 = im1.shape[1]
+		# print x1, y1, x2, y2
 		
 		
 		cv2.line(I,(int(y1 + im1.shape[1]),int(x1)),(int(y2 + im1.shape[1]),int(x2)),color,2)
