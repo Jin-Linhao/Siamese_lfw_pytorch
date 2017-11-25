@@ -26,7 +26,7 @@ from siamese_net_19 import SiameseNetwork
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=3, type=int, metavar='N',
+parser.add_argument('--epochs', default=10, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -43,7 +43,7 @@ parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
-					help='path to validation list (default: ../data/train.txt)')
+					help='path to validation list (default: ../data/test.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
 parser.add_argument('--cuda', default="off", type=str, 
@@ -142,8 +142,7 @@ def save_checkpoint(state, filename):
 
 
 def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
-	plot_counter = []
-	loss_history = [] 
+	running_loss = 0.0
 	iteration_number= 0
 
 	for i, data in enumerate(train_dataloader,0):
@@ -185,7 +184,7 @@ def validate(test_dataloader, forward_pass, criterion):
 		sum = 0
 		for j in range(0, label.size(0)):
 			sum = euclidean_distance.data[j] + sum
-			dis = sum/8
+			dis = sum/label.size(0)
 		for k in range(0, label.size(0)):
 			predicted = euclidean_distance.data[j] < dis
 			predicted = predicted.type('torch.LongTensor')
@@ -232,7 +231,7 @@ def main():
 		adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		plot_counter, loss_history = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
 		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
