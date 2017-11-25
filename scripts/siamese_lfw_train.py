@@ -149,8 +149,8 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
-		output1, output2 = forward_pass(img0, img1)
 		optimizer.zero_grad()
+		output1, output2 = forward_pass(img0, img1)
 		loss_contrastive = criterion(output1,output2,label)
 		loss_contrastive.backward()
 		optimizer.step()

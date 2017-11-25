@@ -35,7 +35,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
 					metavar='N', help='batch size (default: 8)')
-parser.add_argument('--learning_rate', default=1e-6, type=float,
+parser.add_argument('--learning_rate', default=1e-5, type=float,
 					metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 					help='momentum')
@@ -45,7 +45,7 @@ parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
 parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
-parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
+parser.add_argument('--test_list', default='../data/train1.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
@@ -160,8 +160,8 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
-		output= forward_pass(img0,img1)
 		optimizer.zero_grad()
+		output= forward_pass(img0,img1)
 		# forward_pass.zero_grad()
 		# loss = criterion(output, label)
 		loss = F.binary_cross_entropy(output, label)
