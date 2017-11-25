@@ -29,7 +29,7 @@ from siamese_19_BCE import SiameseNetwork_BCE
 parser = argparse.ArgumentParser(description='PyTorch_Siamese_lfw')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
 					help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=6, type=int, metavar='N',
+parser.add_argument('--epochs', default=10, type=int, metavar='N',
 					help='number of total epochs to run(default: 1)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 					help='manual epoch number (useful on restarts)')
@@ -43,7 +43,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
@@ -165,6 +165,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		optimizer.zero_grad()
 		output= forward_pass(img0,img1)
+		# print output
 		# forward_pass.zero_grad()
 		loss = criterion(output, label)
 		loss.backward()	
@@ -190,22 +191,26 @@ def validate(test_dataloader, forward_pass, criterion):
 	total = 0
 	forward_pass = SiameseNetwork_BCE().cuda()
 	for i, data in enumerate(test_dataloader,0):
-		img0, img1 , label = data
-		concatenated = torch.cat((img0, img1),0)	
+		img0, img1, label = data
+		# concatenated = torch.cat((img0, img1),0)	
 		if args.cuda == "off":
 			img0, img1 , label = Variable(img0, volatile = True).cuda(), Variable(img1, volatile = True).cuda(), Variable(label, volatile = True).cuda()
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output= forward_pass(img0,img1)
-		predicted = output.data > 0.5
-		predicted = predicted.type('torch.LongTensor')
+		print "output", output.data
+		for j in range(0, label.size(0)):
+			predicted = output.data[j] > 0.5
+			predicted = predicted.type('torch.LongTensor')
+			label_data = label.data
+			label_data = label.data.type('torch.LongTensor')
+			cnt += torch.sum(predicted == label_data[j])
+			total = total+1
 
-		label_data = label.data
-		label_data = label.data.type('torch.LongTensor')
-		print "predicted: ", predicted.data[0], "output: ", output.data[0], "label: ", label_data.data[0]
-		cnt += torch.sum(predicted == label_data)
-		total += label.size(0)
+		# print "predicted: ", predicted.data[0], "output: ", output.data[0], "label: ", label.data[0]
 		# imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}, ground truth'.format(output.cpu().data.numpy()[0][0], label))
+	print('Accuracy of the network on the all test images: %d %%' % (100 * cnt / total))
+
 	return cnt, total
 
 
@@ -222,13 +227,13 @@ def main():
 						batch_size=args.batch_size)
 
 	test_dataloader = torch.utils.data.DataLoader(
-						ImageList(fileList=args.train_list, 
+						ImageList(fileList=args.test_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),
 						shuffle=True,
 						num_workers=args.workers,
-						batch_size=1)
+						batch_size=8)
 
 	if args.cuda == "off":
 		forward_pass = SiameseNetwork_BCE()
@@ -263,7 +268,7 @@ def main():
 			# 'prec1': prec1,
 			}, save_name)
 
-		print('[epoch %d] loss: %.3f' % (epoch + 1, running_loss/138))
+		print('[Epoch %d] loss: %.3f' % (epoch + 1, running_loss/138))
 	with open(training_plot, 'w') as f:
  		for i in range(0,len(plot_x)):
 			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
