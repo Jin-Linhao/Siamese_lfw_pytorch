@@ -6,7 +6,7 @@
 - <a href='#installation'>Installation</a>
 - <a href='#datasets'>Datasets</a>
 - <a href='#training'>Training</a>
-- <a href='#testing'>Training</a>
+- <a href='#testing'>Testing</a>
 - <a href='#references'>References</a>
 
 ## Updates
