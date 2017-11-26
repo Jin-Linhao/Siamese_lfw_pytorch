@@ -317,8 +317,7 @@ def main():
 	        'state_dict': forward_pass.state_dict(),
 			# 'prec1': prec1,
 			}, save_name)
-
-		print('[Epoch %d] loss: %.3f' % (epoch + 1, running_loss/138))
+		
 	with open(training_plot, 'w') as f:
 		for i in range(0,len(plot_x)):
 			f.write(" ".join([str(plot_x[i]),str(plot_y[i])]))
