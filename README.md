@@ -6,6 +6,7 @@
 - <a href='#installation'>Installation</a>
 - <a href='#datasets'>Datasets</a>
 - <a href='#training'>Training</a>
+- <a href='#testing'>Training</a>
 - <a href='#references'>References</a>
 
 ## Updates
@@ -31,6 +32,16 @@ or
 	  python siamese_lfw_bce.py
 ```
 
+- For cuda version, run:
+```
+	  python siamese_lfw_train.py --cuda on
+```
+or
+```
+	  python siamese_lfw_bce.py --cuda on
+```
+
+## Testing 
 - To load the model and test:
 ```
 	  python siamese_lfw_train.py --load PATH/TO/YOUR/OWN/MODEL.pth.tar
@@ -47,14 +58,7 @@ For example:
 
 ```
 
-- For cuda version, run:
-```
-	  python siamese_lfw_train.py --cuda on
-```
-or
-```
-	  python siamese_lfw_bce.py --cuda on
-```
+
 ## References
 - [Pytorch](https://github.com/pytorch/pytorch). 
 - https://github.com/harveyslash/Facial-Similarity-with-Siamese-Networks-in-Pytorch/tree/master
