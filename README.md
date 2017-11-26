@@ -30,6 +30,23 @@ or
 ```
 	  python siamese_lfw_bce.py
 ```
+
+- To load the model and test:
+```
+	  python siamese_lfw_train.py --load PATH/TO/YOUR/OWN/MODEL.pth.tar
+
+```
+or
+```
+	  python siamese_lfw_bce.py --load PATH/TO/YOUR/OWN/MODEL.pth.tar
+```
+
+For example:
+```
+	  python siamese_lfw_train.py --load /home/lh/cv_ws/src/Siamese_lfw_pytorch/data/9_checkpoint1.pth.tar
+
+```
+
 - For cuda version, run:
 ```
 	  python siamese_lfw_train.py --cuda on
