@@ -43,7 +43,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
 parser.add_argument('--test_list', default='../data/test.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/test.txt)')
@@ -53,6 +53,11 @@ parser.add_argument('--aug', default='off', type=str,
 					help='turn on img augmentation (default: False)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
+
+parser.add_argument('--load', default='default', type=str,
+					help='turn on img augmentation (default: default)')
+parser.add_argument('--save', default='default', type=str,
+					help='turn on img augmentation (default: default)')
 
 plot_x = []
 plot_y = []
@@ -239,6 +244,10 @@ def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
 	total = 0
 	forward_pass = SiameseNetwork().cuda()
+	if args.load != "default":
+		checkpoint = torch.load(args.load)
+		args.start_epoch = checkpoint['epoch']
+		forward_pass.load_state_dict(checkpoint['state_dict'])
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)
@@ -267,8 +276,8 @@ def validate(test_dataloader, forward_pass, criterion):
 
 
 def main():
-	global args     
-	args = parser.parse_args()
+	if args.save != "default":
+		print "just run: python siamese_lfw_train   , it will train and save the file :)"
 	train_dataloader = torch.utils.data.DataLoader(
 						train_ImageList(fileList=args.train_list, 
 								transform=transforms.Compose([ 
@@ -299,12 +308,15 @@ def main():
 	validate_ploty = []
 	training_plot = "p1b_trainloss.txt"
 	validate_plot = "p1b_validate.txt"
+	if args.load != "default":
+		args.epochs = 1
 	for epoch in range(args.start_epoch, args.epochs):
 
 		adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		if args.load == "default":
+			running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
 
 		validate_plotx.append(epoch+1)
@@ -343,7 +355,7 @@ def plot_training_loss():
             plot_y.append(float(data[1]))
     plt.plot(plot_x, plot_y, 'b', label = "training los")
     plt.title('training loss')
-	plt.show()
+    plt.show()
 
 def plot_text_loss():
 	txt_file = 'p1b_validate.txt'
@@ -360,6 +372,9 @@ def plot_text_loss():
 	plt.show()
 
 if __name__ == '__main__':
+	global args     
+	args = parser.parse_args()
 	main()
-	plot_training_loss()
-	plot_text_loss()
+	if args.load == "default":
+		plot_training_loss()
+		plot_text_loss()

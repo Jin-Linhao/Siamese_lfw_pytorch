@@ -53,6 +53,10 @@ parser.add_argument('--aug', default='off', type=str,
 					help='turn on img augmentation (default: False)')
 parser.add_argument('--cuda', default="off", type=str, 
 					help='switch on/off cuda option (default: off)')
+parser.add_argument('--load', default='default', type=str,
+					help='turn on img augmentation (default: default)')
+parser.add_argument('--save', default='default', type=str,
+					help='turn on img augmentation (default: default)')
 
 plot_x = []
 plot_y = []
@@ -224,7 +228,10 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
 	total = 0
-	# forward_pass = SiameseNetwork_BCE().cuda()
+	if args.load != "default":
+		checkpoint = torch.load(args.load)
+		args.start_epoch = checkpoint['epoch']
+		forward_pass.load_state_dict(checkpoint['state_dict'])
 	for i, data in enumerate(test_dataloader,0):
 		img0, img1, label = data
 		# concatenated = torch.cat((img0, img1),0)	
@@ -284,12 +291,17 @@ def main():
 	
 	training_plot = "p1a_trainloss.txt"
 	validate_plot = "p1a_validate.txt"
+
+	if args.load != "default":
+		args.epochs = 1
+
 	for epoch in range(args.start_epoch, args.epochs):
 
 		# adjust_learning_rate(optimizer, epoch)
 
 		# train for one epoch
-		running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
+		if args.load == "default":
+			running_loss = train(train_dataloader, forward_pass, criterion, optimizer, epoch)
 		correct, total = validate(test_dataloader, forward_pass, criterion)
 		print "correct matches: ", correct, "total matches: ", total
 		print "total accuracy = ", float(correct)/total
@@ -347,6 +359,9 @@ def plot_text_loss():
 	plt.show()
 
 if __name__ == '__main__':
+	global args     
+	args = parser.parse_args()
 	main()
-	plot_training_loss()
-	plot_text_loss()
+	if args.load == "default":
+		plot_training_loss()
+		plot_text_loss()
