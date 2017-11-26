@@ -288,7 +288,7 @@ def main():
 						batch_size=args.batch_size)
 
 	test_dataloader = torch.utils.data.DataLoader(
-						test_ImageList(fileList=args.train_list, 
+						test_ImageList(fileList=args.test_list, 
 								transform=transforms.Compose([ 
 								transforms.Scale((128,128)),
 								transforms.ToTensor(),            ])),

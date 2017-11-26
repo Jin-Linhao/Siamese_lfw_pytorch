@@ -43,9 +43,9 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
 					metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--lfw_path', default='../lfw', type=str, metavar='PATH',
 					help='path to root path of lfw dataset (default: ../lfw)')
-parser.add_argument('--train_list', default='../data/train1.txt', type=str, metavar='PATH',
+parser.add_argument('--train_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to training list (default: ../data/train.txt)')
-parser.add_argument('--test_list', default='../data/test1.txt', type=str, metavar='PATH',
+parser.add_argument('--test_list', default='../data/train.txt', type=str, metavar='PATH',
 					help='path to validation list (default: ../data/train.txt)')
 parser.add_argument('--save_path', default='../data/', type=str, metavar='PATH',
 					help='path to save checkpoint (default: ../data/)')
