@@ -243,7 +243,7 @@ def train(train_dataloader, forward_pass, criterion, optimizer, epoch):
 def validate(test_dataloader, forward_pass, criterion):
 	cnt = 0
 	total = 0
-	forward_pass = SiameseNetwork().cuda()
+
 	if args.load != "default":
 		checkpoint = torch.load(args.load)
 		args.start_epoch = checkpoint['epoch']
@@ -252,7 +252,7 @@ def validate(test_dataloader, forward_pass, criterion):
 		img0, img1 , label = data
 		concatenated = torch.cat((img0, img1),0)
 		if args.cuda == "off":
-			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
+			img0, img1 , label = Variable(img0), Variable(img1), Variable(label)
 		else:
 			img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
 		output1, output2 = forward_pass(img0, img1)

@@ -1,4 +1,7 @@
 # -*- encoding: utf-8 -*-
+__author__ = 'LH'
+
+
 import torch.nn as nn
 class SiameseNetwork(nn.Module):
     def __init__(self):

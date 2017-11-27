@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+__author__ = 'LH'
+
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
