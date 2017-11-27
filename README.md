@@ -41,6 +41,12 @@ or
 	  python siamese_lfw_bce.py --cuda on
 ```
 
+- For switch on data augmentation, run:
+```
+	  python siamese_lfw_train.py --aug on
+```
+
+
 ## Testing 
 - To load the model and test:
 ```
